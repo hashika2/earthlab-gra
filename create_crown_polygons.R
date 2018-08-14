@@ -12,97 +12,128 @@ setwd("~/github/earthlab-gra/")
 crown_data_orig <- read.csv('data/MRS-04_crown-diameter-and-tree-height_2018-07-26.csv',
                        stringsAsFactors = FALSE)
 
-# remove the "Notes" colum and keep only rows with complete data
+# remove the "Notes" colum, keep only rows with complete data,
+# and rename the "Tag_number" column to "id" 
 crown_data <- crown_data_orig %>%
   select(-Notes) %>% 
-  na.omit()
+  na.omit() %>% 
+  rename(id = Tag_number)
 
 # read the stem location data for absolute tree coordinates (center points)
 # (currently we do not have this for Tom's plots, so I will 
-# create some simulated tree locations for testing) 
+# create some simulated tree locations for testing).
+# This generates randomly selected integers for x and y coordinates
+# ranging between 0 and the number of rows in crown_data plus 20,
+# so there is some space between trees. Randomly assign ID numbers
+# from the crown data to pair the stem and crown data. 
+stems_x <- sample(x =nrow(crown_data) + 20,
+                  size = nrow(crown_data))
+stems_y <- sample(x =nrow(crown_data) + 20,
+                  size = nrow(crown_data))
+stems_id <- sample(crown_data$id)
+
+stem_coords <- data.frame(id = stems_id, 
+                          x = stems_x,
+                          y = stems_y)
+
+plot(stem_coords$x, stem_coords$y,
+     xlab = 'x coordinate',
+     ylab = 'y coordinate')
 
 
-
-
-
-
-
-### SINGLE TREE POLYGON
-
-# index or row in crown data
-i = 2
-
-# center point 
-x <- 5 
-y <- 10 
-
-# N-S, E-W measurements
-ns_rad <- as.numeric(crown_data$N_radius[i])
-ns_diam <- as.numeric(crown_data$NS_diameter[i])
-ew_rad <- as.numeric(crown_data$E_radius[i])
-ew_diam <- as.numeric(crown_data$EW_diameter[i])
-
-print(ns_rad)
-print(ns_diam)
-print(ew_rad)
-print(ew_diam)
-
-# Azimuth angle of N-S radius relative to North 
-az <- 80
-
-
-# Calculate the angle (in radians) of the N-S radius based on azimuth
-
-if(az >= 0 & az <= 90){
-  print('Azimuth angle is greater than 0 and less than 90 degrees')
-  theta <- NISTunits::NISTdegTOradian(az)
+# loop through tree entries in crown_data
+for(i in 1:nrow(crown_data)){
+  print(i)
   
-  # upper right
-  x_UR <- x + (ns_rad * sin(theta))
-  y_UR <- y + (ns_rad * cos(theta))
+  # use ID (tag number) to match stem + crown data istead of index 
+  id <- crown_data$id[i]
   
-  # lower left 
-  x_LL <- x - ((ns_diam - ns_rad) * sin(theta))
-  y_LL <- y - ((ns_diam - ns_rad) * cos(theta))
+  # center point 
+  x <- stem_coords$x[stem_coords$id == id]
+  y <- stem_coords$y[stem_coords$id == id]
   
-  # lower right 
-  x_LR <- x + (ew_rad * cos(theta))
-  y_LR <- y - (ew_rad * sin(theta))
+  # N-S, E-W measurements
+  ns_rad <- as.numeric(crown_data$N_radius[stem_coords$id == id])
+  ns_diam <- as.numeric(crown_data$NS_diameter[stem_coords$id == id])
+  ew_rad <- as.numeric(crown_data$E_radius[stem_coords$id == id])
+  ew_diam <- as.numeric(crown_data$EW_diameter[stem_coords$id == id])
   
-  # upper left 
-  x_UL <- x - ((ew_diam - ew_rad) * cos(theta))
-  y_UL <- y + ((ew_diam - ew_rad) * sin(theta))
+  # Azimuth angle of N-S radius relative to North 
+  az <- crown_data$Azimuth_angle[stem_coords$id == id]
+  print(az)
   
-} else if(az >= 270 & az < 360){
-  print('Azimuth angle is greater than 270 and less than 360 degrees')
-  theta <- NISTunits::NISTdegTOradian(360 - az)
-  
-  # upper left 
-  
-  # lower right 
-  
-  # upper right 
-  
-  # lower left 
-  
-} else{ 
-  print('Invalid azimuth angle:')
-  print('Must be greater than 0 and less than 90 degrees') 
-  print('OR or greater than 270 and less than 360 degrees.')
-  
-  next 
-  }
-
-
-  
+  if(az >= 0 & az <= 90){
+    print('Azimuth angle is greater than 0 and less than 90 degrees')
     
-# plot points
-plot(x,y, xlim = c(-5,15), ylim = c(0, 20))
-points(x_UR, y_UR, col = "red")
-points(x_LL, y_LL, col = "orange")
-points(x_LR, y_LR, col = "green")
-points(x_UL, y_UL, col = "blue")
-
-# create polygon 
+    # Calculate the angle (in radians) of the N-S radius relative to 
+    # north (0 degrees) based on azimuth angle (degrees)
+    theta <- NISTunits::NISTdegTOradian(az)
+    
+    # upper right
+    x_UR <- x + (ns_rad * sin(theta))
+    y_UR <- y + (ns_rad * cos(theta))
+    
+    # lower left 
+    x_LL <- x - ((ns_diam - ns_rad) * sin(theta))
+    y_LL <- y - ((ns_diam - ns_rad) * cos(theta))
+    
+    # lower right 
+    x_LR <- x + (ew_rad * cos(theta))
+    y_LR <- y - (ew_rad * sin(theta))
+    
+    # upper left 
+    x_UL <- x - ((ew_diam - ew_rad) * cos(theta))
+    y_UL <- y + ((ew_diam - ew_rad) * sin(theta))
+    
+    
+  } else if(az >= 270 & az < 360){
+    print('Azimuth angle is greater than 270 and less than 360 degrees')
+    
+    # Calculate the angle (in radians) of the N-S radius relative to 
+    # north (0 degrees) based on azimuth angle (degrees).
+    # Subtract 270 to obtain the angle between the NS-axis and due West. 
+    theta <- NISTunits::NISTdegTOradian(az - 270)
+    
+    # upper left. use NSradius
+    x_UL <- x - (ns_rad * cos(theta))
+    y_UL <- y + (ns_rad * sin(theta))
+    
+    # lower right. use NSdiam - NSradius. 
+    x_LR <- x + ((ns_diam - ns_rad) * cos(theta))
+    y_LR <- y - ((ns_diam - ns_rad) * sin(theta))
+    
+    # upper right 
+    x_UR <- x + (ew_rad * sin(theta))
+    y_UR <- y + (ew_rad * cos(theta))
+    
+    # lower left 
+    x_LL <- x - ((ew_diam - ew_rad) * sin(theta))
+    y_LL <- y - ((ew_diam - ew_rad) * cos(theta))
+    
+  } else{ 
+    print('Invalid azimuth angle:')
+    print('Must be greater than 0 and less than 90 degrees') 
+    print('OR or greater than 270 and less than 360 degrees.')
+    
+    next 
+  }
+  
+  # plot points
+  if(i==1){
+    plot(x,y, pch = 20, 
+         xlim = c(0,max(stem_coords$x) + 5), 
+         ylim = c(0, max(stem_coords$y) + 5))
+  } else{
+    points(x,y, col = "black", pch = 20)
+  }
+  points(x_UR, y_UR, col = "red", pch = 20, cex = 0.75)
+  points(x_LL, y_LL, col = "orange", pch = 20, cex = 0.75)
+  points(x_LR, y_LR, col = "green", pch = 20, cex = 0.75)
+  points(x_UL, y_UL, col = "blue", pch = 20, cex = 0.75)
+  
+  # create polygon 
+  
+  
+}
 
 
