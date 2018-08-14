@@ -3,6 +3,7 @@
 
 library(dplyr)
 library(NISTunits)
+library(sp)
 
 
 # set working directory
@@ -30,7 +31,9 @@ stems_x <- sample(x =nrow(crown_data) + 20,
                   size = nrow(crown_data))
 stems_y <- sample(x =nrow(crown_data) + 20,
                   size = nrow(crown_data))
-stems_id <- sample(crown_data$id)
+stems_id <- sample(crown_data$id,
+                   size = nrow(crown_data),
+                   replace = FALSE)
 
 stem_coords <- data.frame(id = stems_id, 
                           x = stems_x,
@@ -132,6 +135,18 @@ for(i in 1:nrow(crown_data)){
   points(x_UL, y_UL, col = "blue", pch = 20, cex = 0.75)
   
   # create polygon 
+  coords <- matrix(c(x_UR, y_UR,
+                     x_LR, y_LR,
+                     x_LL, y_LL,
+                     x_UL, y_UL,
+                     x_UR, y_UR),
+                     ncol = 2, 
+                     byrow = TRUE)
+  p <- sp::Polygon(coords)
+  p_sp <- sp::SpatialPolygons(list(sp::Polygons(list(p), ID = id)))
+  
+  plot(p_sp, add=TRUE)
+
   
   
 }
