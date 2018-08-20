@@ -43,6 +43,9 @@ plot(stem_coords$x, stem_coords$y,
      xlab = 'x coordinate',
      ylab = 'y coordinate')
 
+# create a data frame to store crown points
+crown_points_x <- numeric()
+crown_points_y <- numeric()
 
 # loop through tree entries in crown_data
 for(i in 1:nrow(crown_data)){
@@ -63,6 +66,7 @@ for(i in 1:nrow(crown_data)){
   
   # Azimuth angle of N-S radius relative to North 
   az <- crown_data$Azimuth_angle[stem_coords$id == id]
+  print('azimuth angle: ')
   print(az)
   
   if(az >= 0 & az <= 90){
@@ -134,6 +138,12 @@ for(i in 1:nrow(crown_data)){
   points(x_LR, y_LR, col = "green", pch = 20, cex = 0.75)
   points(x_UL, y_UL, col = "blue", pch = 20, cex = 0.75)
   
+  # store points in data frame to experiment with polygons 
+  crown_points_x <- rbind(crown_points_x, 
+                          c(x_UR, x_LR, x_LL, x_UL))
+  crown_points_y <- rbind(crown_points_y,
+                          c(y_UR, y_LR, y_LL, y_UL))
+  
   # create polygon 
   coords <- matrix(c(x_UR, y_UR,
                      x_LR, y_LR,
@@ -147,8 +157,17 @@ for(i in 1:nrow(crown_data)){
   
   plot(p_sp, add=TRUE)
 
-  
-  
+
 }
+
+# rename the columns of the x,y coordinate data frames 
+colnames(crown_points_x) <- c("x_UR", "x_LR", "x_LL", "x_UL")
+colnames(crown_points_y) <- c("y_UR", "y_LR", "y_LL", "y_UL")
+
+# combine crown measurement coordinates into a single data frame
+# to experiment with different types of polygon creation
+crown_points <- cbind(id = crown_data$id, 
+                      crown_points_x, 
+                      crown_points_y)
 
 
