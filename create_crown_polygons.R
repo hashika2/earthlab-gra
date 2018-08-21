@@ -27,6 +27,7 @@ crown_data <- crown_data_orig %>%
 # ranging between 0 and the number of rows in crown_data plus 20,
 # so there is some space between trees. Randomly assign ID numbers
 # from the crown data to pair the stem and crown data. 
+set.seed(42)
 stems_x <- sample(x =nrow(crown_data) + 20,
                   size = nrow(crown_data))
 stems_y <- sample(x =nrow(crown_data) + 20,
@@ -129,7 +130,9 @@ for(i in 1:nrow(crown_data)){
   if(i==1){
     plot(x,y, pch = 20, 
          xlim = c(0,max(stem_coords$x) + 5), 
-         ylim = c(0, max(stem_coords$y) + 5))
+         ylim = c(0, max(stem_coords$y) + 5),
+         xlab = "x (m)",
+         ylab = "y (m)")
   } else{
     points(x,y, col = "black", pch = 20)
   }
